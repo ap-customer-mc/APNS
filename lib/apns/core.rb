@@ -10,7 +10,7 @@ module APNS
   @pass = nil
 
   class << self
-    attr_accessor :host, :pem, :port, :pass
+    attr_accessor :host, :pem, :port, :pass, :keystore
   end
 
   def self.send_notification(device_token, message)
@@ -36,7 +36,7 @@ module APNS
 
     notifications.each do |notification|
       # Each notification frame consists of
-      # 1. (e.g. protocol version) 2 (unsigned char [1 byte]) 
+      # 1. (e.g. protocol version) 2 (unsigned char [1 byte])
       # 2. size of the full frame (unsigend int [4 byte], big endian)
       pn = notification.packaged_notification
       bytes << ([2, pn.bytesize].pack('CN') + pn)
@@ -64,12 +64,20 @@ module APNS
   protected
 
   def self.open_connection
-    raise "The path to your pem file is not set. (APNS.pem = /path/to/cert.pem)" unless self.pem
-    raise "The path to your pem file does not exist!" unless File.exist?(self.pem)
+    if self.keystore.blank? && self.pem.blank?
+      raise "The path to your pem file or PKCS#12 keystore is not set."
+    end
 
     context      = OpenSSL::SSL::SSLContext.new
-    context.cert = OpenSSL::X509::Certificate.new(File.read(self.pem))
-    context.key  = OpenSSL::PKey::RSA.new(File.read(self.pem), self.pass)
+
+    if self.keystore
+      keystore     = OpenSSL::PKCS12.new(File.binread(self.keystore), self.pass)
+      context.cert = keystore.certificate
+      context.key  = keystore.key
+    else
+      context.cert = OpenSSL::X509::Certificate.new(File.read(self.pem))
+      context.key  = OpenSSL::PKey::RSA.new(File.read(self.pem), self.pass)
+    end
 
     sock         = TCPSocket.new(self.host, self.port)
     ssl          = OpenSSL::SSL::SSLSocket.new(sock,context)
@@ -79,12 +87,20 @@ module APNS
   end
 
   def self.feedback_connection
-    raise "The path to your pem file is not set. (APNS.pem = /path/to/cert.pem)" unless self.pem
-    raise "The path to your pem file does not exist!" unless File.exist?(self.pem)
+    if self.keystore.blank? && self.pem.blank?
+      raise "The path to your pem file or PKCS#12 keystore is not set."
+    end
 
     context      = OpenSSL::SSL::SSLContext.new
-    context.cert = OpenSSL::X509::Certificate.new(File.read(self.pem))
-    context.key  = OpenSSL::PKey::RSA.new(File.read(self.pem), self.pass)
+
+    if self.keystore
+      keystore     = OpenSSL::PKCS12.new(File.binread(self.keystore), self.pass)
+      context.cert = keystore.certificate
+      context.key  = keystore.key
+    else
+      context.cert = OpenSSL::X509::Certificate.new(File.read(self.pem))
+      context.key  = OpenSSL::PKey::RSA.new(File.read(self.pem), self.pass)
+    end
 
     fhost = self.host.gsub('gateway','feedback')
     puts fhost
