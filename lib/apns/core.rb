@@ -3,7 +3,7 @@ module APNS
   require 'openssl'
   require 'json'
 
-  @host = 'gateway.sandbox.push.apple.com'
+  @host = 'gateway.push.apple.com'
   @port = 2195
   # openssl pkcs12 -in mycert.p12 -out client-cert.pem -nodes -clcerts
   @pem = nil # this should be the path of the pem file not the contentes
