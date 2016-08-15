@@ -73,9 +73,14 @@ module APNS
     context      = OpenSSL::SSL::SSLContext.new
 
     if self.keystore
+      Rails.logger.debug "Keystore SET"
+      Rails.logger.debug self.keystore
       keystore     = OpenSSL::PKCS12.new(File.binread(self.keystore), self.pass)
       context.cert = keystore.certificate
       context.key  = keystore.key
+      
+      Rails.logger.debug context.cert.inspect
+      Rails.logger.debug context.key.inspect
     else
       context.cert = OpenSSL::X509::Certificate.new(File.read(self.pem))
       context.key  = OpenSSL::PKey::RSA.new(File.read(self.pem), self.pass)
