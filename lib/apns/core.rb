@@ -57,7 +57,9 @@ module APNS
 
     ssl.close
     sock.close
-
+    
+    Rails.logger.debug "Got Feedback"
+    Rails.logger.debug apns_feedback.inspect
     return apns_feedback
   end
 
